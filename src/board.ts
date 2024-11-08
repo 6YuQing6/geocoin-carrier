@@ -7,6 +7,12 @@ export interface Cell {
   readonly j: number;
 }
 
+export interface Coin {
+  readonly i: number;
+  readonly j: number;
+  readonly serial: number;
+}
+
 export class Board {
   readonly tileWidth: number;
   readonly tileVisibilityRadius: number;
@@ -32,7 +38,6 @@ export class Board {
     if (!this.knownCells.has(key)) {
       this.knownCells.set(key, cell);
     }
-    console.table(this.knownCells.get(key)!);
     return this.knownCells.get(key)!;
   }
 
@@ -75,8 +80,21 @@ export class Board {
         }
       });
     });
-    console.log(resultCells);
 
     return resultCells;
+  }
+
+  getCoinsInCell(cell: Cell): Coin[] {
+    const resultCoins: Coin[] = [];
+    console.log("holllaa");
+    const numCoins = Math.floor(
+      luck([cell.i, cell.j, "initialValue"].toString()) * 50,
+    );
+    for (let s = 0; s < numCoins; s++) {
+      resultCoins.push({ ...cell, serial: s });
+      console.log("helo");
+    }
+    console.log(resultCoins);
+    return resultCoins;
   }
 }

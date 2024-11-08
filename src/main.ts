@@ -8,21 +8,21 @@ import "./style.css";
 // Fix missing marker images
 import "./leafletWorkaround.ts";
 
-import { Board, Cell } from "./board.ts";
-import luck from "./luck.ts";
-
-const ORIGIN = leaflet.latLng(36.98949379578401, -122.06277128548504);
-const GAMEPLAY_ZOOM_LEVEL = 19;
-const TILE_WIDTH = 1e-4;
-const VISIBILITY_RADIUS = 8;
-const CACHE_SPAWN_PROBABILITY = 0.1;
-let playerPoints = 0;
+import { Board, Cell, Coin } from "./board.ts";
 
 // HTML Elements ---------------------------------------------------------------
 const statusPanel = document.querySelector<HTMLDivElement>("#status-panel")!; // element `statusPanel` is defined in index.html
 statusPanel.innerHTML = "No points yet...";
 
-// Leaflet Map ---------------------------------------------------------------
+// Leaflet Map Settings ---------------------------------------------------------------
+const ORIGIN = leaflet.latLng(0, 0);
+// oakes: 36.98949379578401, -122.06277128548504
+const GAMEPLAY_ZOOM_LEVEL = 19;
+const TILE_WIDTH = 1e-4;
+const VISIBILITY_RADIUS = 8;
+const CACHE_SPAWN_PROBABILITY = 0.1;
+const collectedCoins: Coin[] = [];
+
 const map = leaflet.map(document.getElementById("map")!, {
   center: ORIGIN,
   zoom: GAMEPLAY_ZOOM_LEVEL,
@@ -57,29 +57,42 @@ currentCells.forEach((cell) => {
 
 function createPopup(cell: Cell): HTMLElement {
   // Each cache has a random point value, mutable by the player
-  let pointValue = Math.floor(
-    luck([cell.i, cell.j, "initialValue"].toString()) * 100,
-  );
+  const coins = board.getCoinsInCell(cell);
+  console.log(coins);
 
   // The popup offers a description and button
   const popupDiv = document.createElement("div");
-  popupDiv.innerHTML = `
-            <div>There is a cache here at "${cell.i},${cell.j}". It has value <span id="value">${pointValue}</span>.</div>
-            <button id="poke">poke</button>`;
+  popupDiv.innerHTML = popUpInnerHTML(cell, coins);
 
   // Clicking the button decrements the cache's value and increments the player's points
   popupDiv
     .querySelector<HTMLButtonElement>("#poke")!
     .addEventListener("click", () => {
-      if (pointValue <= 0) {
+      if (coins.length <= 0) {
         return;
       }
-      pointValue--;
-      popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML = pointValue
-        .toString();
-      playerPoints++;
-      statusPanel.innerHTML = `${playerPoints} points accumulated`;
+      const coin = coins.pop()!;
+      collectedCoins.push(coin);
+      popupDiv.querySelector<HTMLSpanElement>("#coin-display")!.innerHTML =
+        displayCoins(coins);
+      statusPanel.innerHTML = displayCoins(collectedCoins);
     });
 
   return popupDiv;
+}
+
+function displayCoins(coins: Coin[]): string {
+  return `Coins: ${
+    coins
+      .map((coin) => `${coin.i}:${coin.j}#${coin.serial}`)
+      .join("  ")
+  }`;
+}
+
+function popUpInnerHTML(cell: Cell, coins: Coin[]): string {
+  return `
+    <div>There is a cache here at "${cell.i},${cell.j}".
+      <div id="coin-display"> ${displayCoins(coins)} </div>
+    </div>
+    <button id="poke">poke</button>`;
 }
