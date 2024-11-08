@@ -12,10 +12,15 @@ import { Board, Cell } from "./board.ts";
 import luck from "./luck.ts";
 
 const ORIGIN = leaflet.latLng(36.98949379578401, -122.06277128548504);
+// oakes: leaflet.latLng(36.98949379578401, -122.06277128548504);
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_WIDTH = 1e-4;
 const VISIBILITY_RADIUS = 8;
 const CACHE_SPAWN_PROBABILITY = 0.1;
+let playerPoints = 0;
+
+const statusPanel = document.querySelector<HTMLDivElement>("#status-panel")!; // element `statusPanel` is defined in index.html
+statusPanel.innerHTML = "No points yet...";
 
 // Create the map (element with id "map" is defined in index.html)
 const map = leaflet.map(document.getElementById("map")!, {
@@ -46,7 +51,7 @@ currentCells.forEach((cell) => {
   rect.addTo(map);
   rect.bindPopup(() => {
     // Each cache has a random point value, mutable by the player
-    const pointValue = Math.floor(
+    let pointValue = Math.floor(
       luck([cell.i, cell.j, "initialValue"].toString()) * 100,
     );
 
@@ -55,6 +60,20 @@ currentCells.forEach((cell) => {
     popupDiv.innerHTML = `
                 <div>There is a cache here at "${cell.i},${cell.j}". It has value <span id="value">${pointValue}</span>.</div>
                 <button id="poke">poke</button>`;
+
+    // Clicking the button decrements the cache's value and increments the player's points
+    popupDiv
+      .querySelector<HTMLButtonElement>("#poke")!
+      .addEventListener("click", () => {
+        if (pointValue <= 0) {
+          return;
+        }
+        pointValue--;
+        popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML =
+          pointValue.toString();
+        playerPoints++;
+        statusPanel.innerHTML = `${playerPoints} points accumulated`;
+      });
 
     return popupDiv;
   });

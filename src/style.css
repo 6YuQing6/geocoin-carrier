@@ -48,6 +48,14 @@ h1 {
   height: 80vh;
 }
 
+#status-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
