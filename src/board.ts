@@ -86,15 +86,12 @@ export class Board {
 
   getCoinsInCell(cell: Cell): Coin[] {
     const resultCoins: Coin[] = [];
-    console.log("holllaa");
     const numCoins = Math.floor(
-      luck([cell.i, cell.j, "initialValue"].toString()) * 50,
+      luck([cell.i, cell.j, "initialValue"].toString()) * 5,
     );
     for (let s = 0; s < numCoins; s++) {
       resultCoins.push({ ...cell, serial: s });
-      console.log("helo");
     }
-    console.log(resultCoins);
     return resultCoins;
   }
 }

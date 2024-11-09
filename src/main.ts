@@ -49,22 +49,19 @@ const currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
 
 currentCells.forEach((cell) => {
   const bounds = board.getCellBounds(cell);
+  const coins = board.getCoinsInCell(cell);
   leaflet
     .rectangle(bounds)
     .addTo(map)
-    .bindPopup(() => createPopup(cell));
+    .bindPopup(() => createPopup(cell, coins));
 });
 
-function createPopup(cell: Cell): HTMLElement {
-  // Each cache has a random point value, mutable by the player
-  const coins = board.getCoinsInCell(cell);
-  console.log(coins);
-
-  // The popup offers a description and button
+function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
+  // Popup description
   const popupDiv = document.createElement("div");
-  popupDiv.innerHTML = popUpInnerHTML(cell, coins);
+  popupDiv.innerHTML = displayDescription(cell, coins);
 
-  // Clicking the button decrements the cache's value and increments the player's points
+  // Poke button functionality
   popupDiv
     .querySelector<HTMLButtonElement>("#poke")!
     .addEventListener("click", () => {
@@ -81,6 +78,7 @@ function createPopup(cell: Cell): HTMLElement {
   return popupDiv;
 }
 
+// helper display functions
 function displayCoins(coins: Coin[]): string {
   return `Coins: ${
     coins
@@ -89,7 +87,7 @@ function displayCoins(coins: Coin[]): string {
   }`;
 }
 
-function popUpInnerHTML(cell: Cell, coins: Coin[]): string {
+function displayDescription(cell: Cell, coins: Coin[]): string {
   return `
     <div>There is a cache here at "${cell.i},${cell.j}".
       <div id="coin-display"> ${displayCoins(coins)} </div>
