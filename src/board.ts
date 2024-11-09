@@ -13,22 +13,19 @@ export interface Coin {
   readonly serial: number;
 }
 
+const MAX_COINS = 5;
+const CACHE_SPAWN_PROBABILITY = 0.1;
+
 export class Board {
   readonly tileWidth: number;
   readonly tileVisibilityRadius: number;
-  readonly spawnProbability: number;
 
   private readonly knownCells: Map<string, Cell>;
 
-  constructor(
-    tileWidth: number,
-    tileVisibilityRadius: number,
-    spawnProbability: number,
-  ) {
+  constructor(tileWidth: number, tileVisibilityRadius: number) {
     this.tileWidth = tileWidth;
     this.tileVisibilityRadius = tileVisibilityRadius;
     this.knownCells = new Map<string, Cell>();
-    this.spawnProbability = spawnProbability;
   }
 
   // retrieves cell from map of cells
@@ -74,7 +71,7 @@ export class Board {
     // pushes each visible cell into resultCells array
     range.forEach((di) => {
       range.forEach((dj) => {
-        if (luck([i + di, j + dj].toString()) < this.spawnProbability) {
+        if (luck([i + di, j + dj].toString()) < CACHE_SPAWN_PROBABILITY) {
           const cell = this.getCanonicalCell({ i: i + di, j: j + dj });
           resultCells.push(cell);
         }
@@ -87,7 +84,7 @@ export class Board {
   getCoinsInCell(cell: Cell): Coin[] {
     const resultCoins: Coin[] = [];
     const numCoins = Math.floor(
-      luck([cell.i, cell.j, "initialValue"].toString()) * 5,
+      luck([cell.i, cell.j, "initialValue"].toString()) * MAX_COINS,
     );
     for (let s = 0; s < numCoins; s++) {
       resultCoins.push({ ...cell, serial: s });

@@ -10,19 +10,19 @@ import "./leafletWorkaround.ts";
 
 import { Board, Cell, Coin } from "./board.ts";
 
-// HTML Elements ---------------------------------------------------------------
-const statusPanel = document.querySelector<HTMLDivElement>("#status-panel")!; // element `statusPanel` is defined in index.html
-statusPanel.innerHTML = "No points yet...";
-
-// Leaflet Map Settings ---------------------------------------------------------------
+// Configuration Settings ---------------------------------------------------------------
 const ORIGIN = leaflet.latLng(0, 0);
 // oakes: 36.98949379578401, -122.06277128548504
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_WIDTH = 1e-4;
 const VISIBILITY_RADIUS = 8;
-const CACHE_SPAWN_PROBABILITY = 0.1;
 const collectedCoins: Coin[] = [];
 
+// HTML Elements ---------------------------------------------------------------
+const statusPanel = document.querySelector<HTMLDivElement>("#status-panel")!; // element `statusPanel` is defined in index.html
+statusPanel.innerHTML = "No points yet...";
+
+// Leaflet Elements ---------------------------------------------------------------
 const map = leaflet.map(document.getElementById("map")!, {
   center: ORIGIN,
   zoom: GAMEPLAY_ZOOM_LEVEL,
@@ -41,21 +41,22 @@ leaflet
   })
   .addTo(map);
 
+// Player
 leaflet.marker(ORIGIN).addTo(map).bindPopup("This is you!").openPopup();
 
-// Leaflet Random Cells ---------------------------------------------------------------
-const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS, CACHE_SPAWN_PROBABILITY);
+// Leaflet Cell Generation ---------------------------------------------------------------
+const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS);
 const currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
 
+// Binds a rectangle popup to each cell
 currentCells.forEach((cell) => {
-  const bounds = board.getCellBounds(cell);
-  const coins = board.getCoinsInCell(cell);
   leaflet
-    .rectangle(bounds)
+    .rectangle(board.getCellBounds(cell))
     .addTo(map)
-    .bindPopup(() => createPopup(cell, coins));
+    .bindPopup(() => createPopup(cell, board.getCoinsInCell(cell)));
 });
 
+// Function Defintions ---------------------------------------------------------------
 function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
   // Popup description
   const popupDiv = document.createElement("div");
@@ -78,7 +79,6 @@ function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
   return popupDiv;
 }
 
-// helper display functions
 function displayCoins(coins: Coin[]): string {
   return `Coins: ${
     coins
