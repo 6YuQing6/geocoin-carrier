@@ -16,11 +16,17 @@ const ORIGIN = leaflet.latLng(0, 0);
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_WIDTH = 1e-4;
 const VISIBILITY_RADIUS = 8;
-const collectedCoins: Coin[] = [];
 
 // HTML Elements ---------------------------------------------------------------
-const statusPanel = document.querySelector<HTMLDivElement>("#status-panel")!; // element `statusPanel` is defined in index.html
+const statusPanel = document.querySelector<HTMLDivElement>("#status-panel")!;
 statusPanel.innerHTML = "No points yet...";
+
+const movementButtons = {
+  north: document.getElementById("north")!,
+  south: document.getElementById("south")!,
+  west: document.getElementById("west")!,
+  east: document.getElementById("east")!,
+};
 
 // Leaflet Elements ---------------------------------------------------------------
 const map = leaflet.map(document.getElementById("map")!, {
@@ -32,7 +38,7 @@ const map = leaflet.map(document.getElementById("map")!, {
   scrollWheelZoom: false,
 });
 
-// Populate the map with a background tile layer
+// Background
 leaflet
   .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -52,8 +58,9 @@ const playerMarker = leaflet
 const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS);
 let currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
 const currentRectangles = leaflet.layerGroup([]).addTo(map);
+const collectedCoins: Coin[] = [];
 
-// Binds a rectangle popup to each cell
+// Clears the map and generates all current cells
 function updateCells() {
   currentRectangles.clearLayers();
   currentCells.forEach((cell) => {
@@ -75,20 +82,20 @@ function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
   const popupDiv = document.createElement("div");
   popupDiv.innerHTML = displayDescription(cell, coins);
 
-  popupDiv
-    .querySelector<HTMLButtonElement>("#poke")!
-    .addEventListener("click", () => {
-      const cache = board.getCacheForCell(cell);
-      if (cache.numCoins > 0) {
-        cache.numCoins -= 1;
-        board.saveCacheState(cell, cache);
-        const collectedCoin = { ...cell, serial: cache.numCoins };
-        collectedCoins.push(collectedCoin);
-        popupDiv.querySelector<HTMLSpanElement>("#coin-display")!.innerHTML =
-          displayCoins(board.getCoinsInCell(cell));
-        statusPanel.innerHTML = displayCoins(collectedCoins);
-      }
-    });
+  const pokeButton = popupDiv.querySelector<HTMLButtonElement>("#poke")!;
+  const coinDisplay = popupDiv.querySelector<HTMLSpanElement>("#coin-display")!;
+
+  pokeButton.addEventListener("click", () => {
+    const cache = board.getCacheForCell(cell);
+    if (cache.numCoins > 0) {
+      cache.numCoins -= 1;
+      board.saveCacheState(cell, cache);
+      const collectedCoin = { ...cell, serial: cache.numCoins };
+      collectedCoins.push(collectedCoin);
+      coinDisplay.innerHTML = displayCoins(board.getCoinsInCell(cell));
+      statusPanel.innerHTML = displayCoins(collectedCoins);
+    }
+  });
 
   return popupDiv;
 }
@@ -106,13 +113,6 @@ function displayDescription(cell: Cell, coins: Coin[]): string {
 }
 
 // Player Movement ---------------------------------------------------------------
-const movementButtons = {
-  north: document.getElementById("north")!,
-  south: document.getElementById("south")!,
-  west: document.getElementById("west")!,
-  east: document.getElementById("east")!,
-};
-
 function movePlayer(deltaLat: number, deltaLng: number) {
   const currentLatLng = playerMarker.getLatLng();
   const newLatLng = leaflet.latLng(
