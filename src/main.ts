@@ -42,21 +42,35 @@ leaflet
   .addTo(map);
 
 // Player
-leaflet.marker(ORIGIN).addTo(map).bindPopup("This is you!").openPopup();
+const playerMarker = leaflet
+  .marker(ORIGIN)
+  .addTo(map)
+  .bindPopup("This is you!")
+  .openPopup();
 
 // Leaflet Cell Generation ---------------------------------------------------------------
 const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS);
-const currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
+let currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
+const currentRectangles = leaflet.layerGroup([]).addTo(map);
 
 // Binds a rectangle popup to each cell
-currentCells.forEach((cell) => {
-  leaflet
-    .rectangle(board.getCellBounds(cell))
-    .addTo(map)
-    .bindPopup(() => createPopup(cell, board.getCoinsInCell(cell)));
-});
+function updateCells() {
+  currentRectangles.clearLayers();
+  currentCells.forEach((cell) => {
+    const rectangle = leaflet
+      .rectangle(board.getCellBounds(cell))
+      .bindPopup(() => createPopup(cell, board.getCoinsInCell(cell)));
+    currentRectangles.addLayer(rectangle);
+  });
+}
+
+updateCells();
 
 // Function Defintions ---------------------------------------------------------------
+function coinToString(coin: Coin): string {
+  return `🪙 ${coin.i}:${coin.j}#${coin.serial}`;
+}
+
 function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
   // Popup description
   const popupDiv = document.createElement("div");
@@ -80,11 +94,7 @@ function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
 }
 
 function displayCoins(coins: Coin[]): string {
-  return `Coins: ${
-    coins
-      .map((coin) => `${coin.i}:${coin.j}#${coin.serial}`)
-      .join("  ")
-  }`;
+  return `Coins:<br>${coins.map((coin) => coinToString(coin)).join(" ")}`;
 }
 
 function displayDescription(cell: Cell, coins: Coin[]): string {
@@ -94,3 +104,47 @@ function displayDescription(cell: Cell, coins: Coin[]): string {
     </div>
     <button id="poke">poke</button>`;
 }
+
+// Player Movement ---------------------------------------------------------------
+const movementButtons = {
+  north: document.getElementById("north")!,
+  south: document.getElementById("south")!,
+  west: document.getElementById("west")!,
+  east: document.getElementById("east")!,
+};
+
+const movementDelta = 0.0001;
+
+function movePlayer(deltaLat: number, deltaLng: number) {
+  const currentLatLng = playerMarker.getLatLng();
+  const newLatLng = leaflet.latLng(
+    currentLatLng.lat + deltaLat,
+    currentLatLng.lng + deltaLng,
+  );
+  playerMarker.setLatLng(newLatLng);
+  map.setView(newLatLng);
+
+  // Clear existing cells and update with new position
+  currentCells.forEach((cell) => {
+    leaflet.rectangle(board.getCellBounds(cell)).remove();
+  });
+  currentCells = board.getCellsNearPoint(newLatLng);
+  updateCells();
+}
+
+movementButtons.north.addEventListener(
+  "click",
+  () => movePlayer(movementDelta, 0),
+);
+movementButtons.south.addEventListener(
+  "click",
+  () => movePlayer(-movementDelta, 0),
+);
+movementButtons.west.addEventListener(
+  "click",
+  () => movePlayer(0, -movementDelta),
+);
+movementButtons.east.addEventListener(
+  "click",
+  () => movePlayer(0, movementDelta),
+);

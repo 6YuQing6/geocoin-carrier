@@ -17,14 +17,14 @@ const MAX_COINS = 5;
 const CACHE_SPAWN_PROBABILITY = 0.1;
 
 export class Board {
-  readonly tileWidth: number;
-  readonly tileVisibilityRadius: number;
+  readonly width: number;
+  readonly radius: number;
 
   private readonly knownCells: Map<string, Cell>;
 
-  constructor(tileWidth: number, tileVisibilityRadius: number) {
-    this.tileWidth = tileWidth;
-    this.tileVisibilityRadius = tileVisibilityRadius;
+  constructor(width: number, radius: number) {
+    this.width = width;
+    this.radius = radius;
     this.knownCells = new Map<string, Cell>();
   }
 
@@ -40,18 +40,18 @@ export class Board {
 
   // checks to see which cell you are in
   getCellForPoint(point: leaflet.LatLng): Cell {
-    const i = Math.floor(point.lat / this.tileWidth);
-    const j = Math.floor(point.lng / this.tileWidth);
+    const i = Math.floor(point.lat / this.width);
+    const j = Math.floor(point.lng / this.width);
     return this.getCanonicalCell({ i, j });
   }
 
   // gets cell rectangle position
   getCellBounds(cell: Cell): leaflet.LatLngBounds {
     const { i, j } = cell;
-    const southWest = leaflet.latLng(i * this.tileWidth, j * this.tileWidth);
+    const southWest = leaflet.latLng(i * this.width, j * this.width);
     const northEast = leaflet.latLng(
-      (i + 1) * this.tileWidth,
-      (j + 1) * this.tileWidth,
+      (i + 1) * this.width,
+      (j + 1) * this.width,
     );
     return leaflet.latLngBounds(southWest, northEast);
   }
@@ -64,8 +64,8 @@ export class Board {
 
     // gets range of surrounding i,j points in a circle based on visibility radius
     const range = Array.from(
-      { length: 2 * this.tileVisibilityRadius + 1 },
-      (_, k) => k - this.tileVisibilityRadius,
+      { length: 2 * this.radius + 1 },
+      (_, k) => k - this.radius,
     );
 
     // pushes each visible cell into resultCells array
@@ -82,13 +82,13 @@ export class Board {
   }
 
   getCoinsInCell(cell: Cell): Coin[] {
-    const resultCoins: Coin[] = [];
-    const numCoins = Math.floor(
+    const numCoins = Math.ceil(
       luck([cell.i, cell.j, "initialValue"].toString()) * MAX_COINS,
     );
-    for (let s = 0; s < numCoins; s++) {
-      resultCoins.push({ ...cell, serial: s });
+    const coins: Coin[] = [];
+    for (let serial = 0; serial < numCoins; serial++) {
+      coins.push({ ...cell, serial });
     }
-    return resultCoins;
+    return coins;
   }
 }
