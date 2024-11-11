@@ -72,22 +72,22 @@ function coinToString(coin: Coin): string {
 }
 
 function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
-  // Popup description
   const popupDiv = document.createElement("div");
   popupDiv.innerHTML = displayDescription(cell, coins);
 
-  // Poke button functionality
   popupDiv
     .querySelector<HTMLButtonElement>("#poke")!
     .addEventListener("click", () => {
-      if (coins.length <= 0) {
-        return;
+      const cache = board.getCacheForCell(cell);
+      if (cache.numCoins > 0) {
+        cache.numCoins -= 1;
+        board.saveCacheState(cell, cache);
+        const collectedCoin = { ...cell, serial: cache.numCoins };
+        collectedCoins.push(collectedCoin);
+        popupDiv.querySelector<HTMLSpanElement>("#coin-display")!.innerHTML =
+          displayCoins(board.getCoinsInCell(cell));
+        statusPanel.innerHTML = displayCoins(collectedCoins);
       }
-      const coin = coins.pop()!;
-      collectedCoins.push(coin);
-      popupDiv.querySelector<HTMLSpanElement>("#coin-display")!.innerHTML =
-        displayCoins(coins);
-      statusPanel.innerHTML = displayCoins(collectedCoins);
     });
 
   return popupDiv;
@@ -113,8 +113,6 @@ const movementButtons = {
   east: document.getElementById("east")!,
 };
 
-const movementDelta = 0.0001;
-
 function movePlayer(deltaLat: number, deltaLng: number) {
   const currentLatLng = playerMarker.getLatLng();
   const newLatLng = leaflet.latLng(
@@ -124,27 +122,26 @@ function movePlayer(deltaLat: number, deltaLng: number) {
   playerMarker.setLatLng(newLatLng);
   map.setView(newLatLng);
 
-  // Clear existing cells and update with new position
+  // Save current cache states
   currentCells.forEach((cell) => {
-    leaflet.rectangle(board.getCellBounds(cell)).remove();
+    const cache = board.getCacheForCell(cell);
+    board.saveCacheState(cell, cache);
   });
+
   currentCells = board.getCellsNearPoint(newLatLng);
   updateCells();
 }
 
 movementButtons.north.addEventListener(
   "click",
-  () => movePlayer(movementDelta, 0),
+  () => movePlayer(TILE_WIDTH, 0),
 );
 movementButtons.south.addEventListener(
   "click",
-  () => movePlayer(-movementDelta, 0),
+  () => movePlayer(-TILE_WIDTH, 0),
 );
 movementButtons.west.addEventListener(
   "click",
-  () => movePlayer(0, -movementDelta),
+  () => movePlayer(0, -TILE_WIDTH),
 );
-movementButtons.east.addEventListener(
-  "click",
-  () => movePlayer(0, movementDelta),
-);
+movementButtons.east.addEventListener("click", () => movePlayer(0, TILE_WIDTH));

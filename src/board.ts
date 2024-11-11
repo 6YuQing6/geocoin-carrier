@@ -1,6 +1,7 @@
 // @deno-types="npm:@types/leaflet@^1.9.14"
 import leaflet from "leaflet";
 import luck from "./luck.ts";
+import { Cache, CacheManager } from "./cache.ts";
 
 export interface Cell {
   readonly i: number;
@@ -13,7 +14,6 @@ export interface Coin {
   readonly serial: number;
 }
 
-const MAX_COINS = 5;
 const CACHE_SPAWN_PROBABILITY = 0.1;
 
 export class Board {
@@ -21,6 +21,7 @@ export class Board {
   readonly radius: number;
 
   private readonly knownCells: Map<string, Cell>;
+  private cacheManager: CacheManager = new CacheManager();
 
   constructor(width: number, radius: number) {
     this.width = width;
@@ -82,13 +83,26 @@ export class Board {
   }
 
   getCoinsInCell(cell: Cell): Coin[] {
-    const numCoins = Math.ceil(
-      luck([cell.i, cell.j, "initialValue"].toString()) * MAX_COINS,
-    );
+    const numCoins = this.getCacheForCell(cell);
     const coins: Coin[] = [];
-    for (let serial = 0; serial < numCoins; serial++) {
+    for (let serial = 0; serial < numCoins.numCoins; serial++) {
       coins.push({ ...cell, serial });
     }
     return coins;
+  }
+
+  getCacheForCell(cell: Cell): Cache {
+    const cellKey = `${cell.i}.${cell.j}`;
+    let cache = this.cacheManager.getCacheState(cellKey);
+    if (!cache) {
+      cache = new Cache(cell);
+      this.cacheManager.saveCacheState(cellKey, cache);
+    }
+    return cache;
+  }
+
+  saveCacheState(cell: Cell, cache: Cache) {
+    const cellKey = `${cell.i}.${cell.j}`;
+    this.cacheManager.saveCacheState(cellKey, cache);
   }
 }
