@@ -37,6 +37,8 @@ const VISIBILITY_RADIUS = 8;
 const statusPanel = document.querySelector<HTMLDivElement>("#status-panel")!;
 statusPanel.innerHTML = "No points yet...";
 
+const geoLocationButton = document.querySelector<HTMLButtonElement>("#sensor")!;
+
 const movementButtons = {
   north: document.getElementById("north")!,
   south: document.getElementById("south")!,
@@ -77,35 +79,45 @@ statusPanel.innerHTML = displayCoins(board.coins);
 let currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
 const currentRectangles = leaflet.layerGroup([]).addTo(map);
 
-const geolocationFlag = false;
-if ("geolocation" in navigator && geolocationFlag) {
-  console.log("located");
-  navigator.geolocation.watchPosition(
-    (position) => {
-      console.log(position.coords.latitude, position.coords.longitude);
-      const { latitude, longitude } = position.coords;
-      const newLatLng = leaflet.latLng(latitude, longitude);
+let watchId: number;
+let geolocationFlag = false;
 
-      playerMarker.setLatLng(newLatLng);
-      map.setView(newLatLng);
+geoLocationButton.addEventListener("click", () => {
+  geolocationFlag = !geolocationFlag;
+  toggleGeolocation(geolocationFlag);
+});
 
-      currentCells.forEach((cell) => {
-        board.getCacheForCell(cell);
-      });
-      currentCells = board.getCellsNearPoint(newLatLng);
-      updateCells();
-    },
-    (error) => {
-      console.error("Error watching position:", error);
-    },
-    {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 5000,
-    },
-  );
-} else {
-  console.log("Location not found");
+function toggleGeolocation(flag: boolean) {
+  if (flag && "geolocation" in navigator) {
+    console.log("Geolocation enabled");
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        console.log(position.coords.latitude, position.coords.longitude);
+        const { latitude, longitude } = position.coords;
+        const newLatLng = leaflet.latLng(latitude, longitude);
+
+        playerMarker.setLatLng(newLatLng);
+        map.setView(newLatLng);
+
+        currentCells.forEach((cell) => {
+          board.getCacheForCell(cell);
+        });
+        currentCells = board.getCellsNearPoint(newLatLng);
+        updateCells();
+      },
+      (error) => {
+        console.error("Error watching position:", error);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000,
+      },
+    );
+  } else {
+    console.log("Geolocation disabled");
+    navigator.geolocation.clearWatch(watchId);
+  }
 }
 
 // Clears the map and generates all current cells
