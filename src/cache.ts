@@ -30,3 +30,22 @@ export class Cache implements Momento<string> {
     return this;
   }
 }
+
+export class Point implements Momento<string> {
+  i: number;
+  j: number;
+  constructor(cell?: Cell) {
+    this.i = cell ? cell.i : 0;
+    this.j = cell ? cell.j : 0;
+  }
+  toMomento() {
+    return JSON.stringify({ i: this.i, j: this.j });
+  }
+
+  fromMomento(momento: string) {
+    const { i, j } = JSON.parse(momento);
+    this.i = i;
+    this.j = j;
+    return this;
+  }
+}

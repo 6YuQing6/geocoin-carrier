@@ -1,7 +1,7 @@
 // @deno-types="npm:@types/leaflet@^1.9.14"
 import leaflet from "leaflet";
 import luck from "./luck.ts";
-import { Cache } from "./cache.ts";
+import { Cache, Point } from "./cache.ts";
 
 export interface Cell {
   readonly i: number;
@@ -23,11 +23,13 @@ export class Board {
   private readonly knownCells: Map<string, Cell>;
   private caches: Map<string, string> = new Map();
   coins: Coin[] = [];
+  points: string[];
 
   constructor(width: number, radius: number) {
     this.width = width;
     this.radius = radius;
     this.knownCells = new Map<string, Cell>();
+    this.points = [];
   }
 
   // retrieves cell from map of cells
@@ -102,7 +104,6 @@ export class Board {
     const cacheMomento = this.caches.get(cellKey);
     if (!cacheMomento) {
       const cache = new Cache(cell);
-      // this.caches.set(cellKey, cache.toMomento());
       return cache;
     } else {
       return new Cache(cell).fromMomento(cacheMomento);
@@ -121,23 +122,53 @@ export class Board {
     localStorage.setItem("coins", JSON.stringify(this.coins));
   }
 
+  savePolyline() {
+    // polyline
+    localStorage.setItem("polyline", JSON.stringify(this.points));
+  }
+
   loadSession() {
     // cache
     const c = localStorage.getItem("caches");
-    if (!c) return;
-    const cachesession: Array<{ key: string; value: string }> = JSON.parse(c);
-    this.caches = new Map(cachesession.map((item) => [item.key, item.value]));
+    if (c) {
+      const cachesession: Array<{ key: string; value: string }> = JSON.parse(c);
+      this.caches = new Map(cachesession.map((item) => [item.key, item.value]));
+    }
 
     // coins
     const coins = localStorage.getItem("coins");
-    if (!coins) return;
-    this.coins = JSON.parse(coins);
+    if (coins) {
+      this.coins = JSON.parse(coins);
+    }
+
+    // polyline
+    const p = localStorage.getItem("polyline");
+    if (p) {
+      this.points = JSON.parse(p);
+    }
   }
 
   clearSession() {
     localStorage.removeItem("caches");
     localStorage.removeItem("coins");
+    localStorage.removeItem("polyline");
     this.caches.clear();
     this.coins = [];
+    this.points = [];
+  }
+
+  // adds point to polyline
+  addPoint(point: Cell) {
+    const p = new Point(point);
+    this.points.push(p.toMomento());
+    return this.points;
+  }
+
+  toLatLng(): leaflet.LatLng[] {
+    const latLngPoints = this.points.map((point) => {
+      const p = new Point().fromMomento(point);
+      return leaflet.latLng(p.i, p.j);
+    });
+    return latLngPoints;
   }
 }

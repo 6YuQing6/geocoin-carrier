@@ -80,7 +80,16 @@ const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS);
 board.loadSession();
 statusPanel.innerHTML = displayCoins(board.coins);
 let currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
-const currentRectangles = leaflet.layerGroup([]).addTo(map);
+const cellGroup = leaflet.layerGroup([]).addTo(map);
+const polylineGroup = leaflet.layerGroup([]).addTo(map);
+let polyline: leaflet.Polyline;
+
+if (board.points) {
+  polyline = leaflet.polyline(board.toLatLng(), { color: "red" });
+} else {
+  polyline = leaflet.polyline([ORIGIN], { color: "red" });
+}
+polylineGroup.addLayer(polyline);
 
 resetButton.addEventListener("click", () => {
   const confirmation = confirm(
@@ -90,6 +99,7 @@ resetButton.addEventListener("click", () => {
     board.clearSession();
     statusPanel.innerHTML = displayCoins(board.coins);
     updateCells();
+    polylineGroup.clearLayers();
   }
 });
 
@@ -118,6 +128,9 @@ function toggleGeolocation(flag: boolean) {
         });
         currentCells = board.getCellsNearPoint(newLatLng);
         updateCells();
+        board.addPoint({ i: newLatLng.lat, j: newLatLng.lng });
+        drawLine(newLatLng);
+        board.savePolyline();
       },
       (error) => {
         console.error("Error watching position:", error);
@@ -136,12 +149,12 @@ function toggleGeolocation(flag: boolean) {
 
 // Clears the map and generates all current cells
 function updateCells() {
-  currentRectangles.clearLayers();
+  cellGroup.clearLayers();
   currentCells.forEach((cell) => {
     const rectangle = leaflet
       .rectangle(board.getCellBounds(cell))
       .bindPopup(() => createPopup(cell, board.getCoinsInCell(cell)));
-    currentRectangles.addLayer(rectangle);
+    cellGroup.addLayer(rectangle);
   });
 }
 
@@ -201,7 +214,15 @@ function movePlayer(deltaLat: number, deltaLng: number) {
     board.getCacheForCell(cell);
   });
   currentCells = board.getCellsNearPoint(newLatLng);
+
+  drawLine(newLatLng);
   updateCells();
+  board.savePolyline();
+}
+
+function drawLine(nextPoint: leaflet.LatLng) {
+  board.addPoint({ i: nextPoint.lat, j: nextPoint.lng });
+  polyline.addLatLng(nextPoint);
 }
 
 movementButtons.north.addEventListener(
