@@ -72,9 +72,10 @@ const playerMarker = leaflet
 
 // Leaflet Cell Generation ---------------------------------------------------------------
 const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS);
+board.loadSession();
+statusPanel.innerHTML = displayCoins(board.coins);
 let currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
 const currentRectangles = leaflet.layerGroup([]).addTo(map);
-const collectedCoins: Coin[] = [];
 
 const geolocationFlag = false;
 if ("geolocation" in navigator && geolocationFlag) {
@@ -88,7 +89,9 @@ if ("geolocation" in navigator && geolocationFlag) {
       playerMarker.setLatLng(newLatLng);
       map.setView(newLatLng);
 
-      saveCacheState();
+      currentCells.forEach((cell) => {
+        board.getCacheForCell(cell);
+      });
       currentCells = board.getCellsNearPoint(newLatLng);
       updateCells();
     },
@@ -103,13 +106,6 @@ if ("geolocation" in navigator && geolocationFlag) {
   );
 } else {
   console.log("Location not found");
-}
-
-function saveCacheState() {
-  // Save current cache states
-  currentCells.forEach((cell) => {
-    board.getCacheForCell(cell);
-  });
 }
 
 // Clears the map and generates all current cells
@@ -143,9 +139,10 @@ function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
       cache.numCoins -= 1;
       board.saveCacheState(cell, cache);
       const collectedCoin = { ...cell, serial: cache.numCoins };
-      collectedCoins.push(collectedCoin);
+      board.coins.push(collectedCoin);
       coinDisplay.innerHTML = displayCoins(board.getCoinsInCell(cell));
-      statusPanel.innerHTML = displayCoins(collectedCoins);
+      statusPanel.innerHTML = displayCoins(board.coins);
+      board.saveSession();
     }
   });
 
@@ -174,7 +171,9 @@ function movePlayer(deltaLat: number, deltaLng: number) {
   playerMarker.setLatLng(newLatLng);
   map.setView(newLatLng);
 
-  saveCacheState();
+  currentCells.forEach((cell) => {
+    board.getCacheForCell(cell);
+  });
   currentCells = board.getCellsNearPoint(newLatLng);
   updateCells();
 }

@@ -22,6 +22,7 @@ export class Board {
 
   private readonly knownCells: Map<string, Cell>;
   private caches: Map<string, string> = new Map();
+  coins: Coin[] = [];
 
   constructor(width: number, radius: number) {
     this.width = width;
@@ -101,15 +102,40 @@ export class Board {
     const cacheMomento = this.caches.get(cellKey);
     if (!cacheMomento) {
       const cache = new Cache(cell);
-      this.caches.set(cellKey, cache.toMomento());
+      // this.caches.set(cellKey, cache.toMomento());
       return cache;
     } else {
-      const cache = new Cache(cell).fromMomento(cacheMomento);
-      return cache;
+      return new Cache(cell).fromMomento(cacheMomento);
     }
   }
 
-  clearCaches() {
+  saveSession() {
+    // cache
+    const c: { key: string; value: string }[] = [];
+    this.caches.forEach((value, key) => {
+      c.push({ key: key, value: value });
+    });
+    localStorage.setItem("caches", JSON.stringify(c));
+
+    // coins
+    localStorage.setItem("coins", JSON.stringify(this.coins));
+  }
+
+  loadSession() {
+    // cache
+    const c = localStorage.getItem("caches");
+    if (!c) return;
+    const cachesession: Array<{ key: string; value: string }> = JSON.parse(c);
+    this.caches = new Map(cachesession.map((item) => [item.key, item.value]));
+
+    // coins
+    const coins = localStorage.getItem("coins");
+    if (!coins) return;
+    this.coins = JSON.parse(coins);
+  }
+
+  clearSession() {
+    localStorage.removeItem("caches");
     this.caches.clear();
   }
 }
