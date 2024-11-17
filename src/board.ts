@@ -1,7 +1,7 @@
 // @deno-types="npm:@types/leaflet@^1.9.14"
 import leaflet from "leaflet";
 import luck from "./luck.ts";
-import { Cache, CacheManager } from "./cache.ts";
+import { Cache } from "./cache.ts";
 
 export interface Cell {
   readonly i: number;
@@ -21,7 +21,7 @@ export class Board {
   readonly radius: number;
 
   private readonly knownCells: Map<string, Cell>;
-  private cacheManager: CacheManager = new CacheManager();
+  private caches: Map<string, string> = new Map();
 
   constructor(width: number, radius: number) {
     this.width = width;
@@ -91,18 +91,25 @@ export class Board {
     return coins;
   }
 
-  getCacheForCell(cell: Cell): Cache {
-    const cellKey = `${cell.i}.${cell.j}`;
-    let cache = this.cacheManager.getCacheState(cellKey);
-    if (!cache) {
-      cache = new Cache(cell);
-      this.cacheManager.saveCacheState(cellKey, cache);
-    }
-    return cache;
-  }
-
   saveCacheState(cell: Cell, cache: Cache) {
     const cellKey = `${cell.i}.${cell.j}`;
-    this.cacheManager.saveCacheState(cellKey, cache);
+    this.caches.set(cellKey, cache.toMomento());
+  }
+
+  getCacheForCell(cell: Cell): Cache {
+    const cellKey = `${cell.i}.${cell.j}`;
+    const cacheMomento = this.caches.get(cellKey);
+    if (!cacheMomento) {
+      const cache = new Cache(cell);
+      this.caches.set(cellKey, cache.toMomento());
+      return cache;
+    } else {
+      const cache = new Cache(cell).fromMomento(cacheMomento);
+      return cache;
+    }
+  }
+
+  clearCaches() {
+    this.caches.clear();
   }
 }

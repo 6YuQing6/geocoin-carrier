@@ -27,21 +27,6 @@ export class Cache implements Momento<string> {
     this.i = i;
     this.j = j;
     this.numCoins = numCoins;
-  }
-}
-
-export class CacheManager {
-  private caches: Map<string, Cache> = new Map();
-
-  saveCacheState(cellKey: string, cache: Cache) {
-    this.caches.set(cellKey, cache);
-  }
-
-  getCacheState(cellKey: string): Cache | undefined {
-    return this.caches.get(cellKey);
-  }
-
-  removeCacheState(cellKey: string) {
-    this.caches.delete(cellKey);
+    return this;
   }
 }

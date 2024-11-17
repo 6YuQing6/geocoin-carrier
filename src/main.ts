@@ -108,8 +108,7 @@ if ("geolocation" in navigator && geolocationFlag) {
 function saveCacheState() {
   // Save current cache states
   currentCells.forEach((cell) => {
-    const cache = board.getCacheForCell(cell);
-    board.saveCacheState(cell, cache);
+    board.getCacheForCell(cell);
   });
 }
 
