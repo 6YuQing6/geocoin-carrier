@@ -136,6 +136,8 @@ export class Board {
 
   clearSession() {
     localStorage.removeItem("caches");
+    localStorage.removeItem("coins");
     this.caches.clear();
+    this.coins = [];
   }
 }

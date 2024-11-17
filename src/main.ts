@@ -39,6 +39,8 @@ statusPanel.innerHTML = "No points yet...";
 
 const geoLocationButton = document.querySelector<HTMLButtonElement>("#sensor")!;
 
+const resetButton = document.querySelector<HTMLButtonElement>("#reset")!;
+
 const movementButtons = {
   north: document.getElementById("north")!,
   south: document.getElementById("south")!,
@@ -74,10 +76,22 @@ const playerMarker = leaflet
 
 // Leaflet Cell Generation ---------------------------------------------------------------
 const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS);
+
 board.loadSession();
 statusPanel.innerHTML = displayCoins(board.coins);
 let currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
 const currentRectangles = leaflet.layerGroup([]).addTo(map);
+
+resetButton.addEventListener("click", () => {
+  const confirmation = confirm(
+    "Are you sure you want to erase your game state?",
+  );
+  if (confirmation) {
+    board.clearSession();
+    statusPanel.innerHTML = displayCoins(board.coins);
+    updateCells();
+  }
+});
 
 let watchId: number;
 let geolocationFlag = false;
