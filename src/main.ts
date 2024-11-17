@@ -10,8 +10,24 @@ import "./leafletWorkaround.ts";
 
 import { Board, Cell, Coin } from "./board.ts";
 
+// Prompt
+/*
+Your program MUST:
+- Allow the player to turn on automatic position updating based on their device’s current geolocation (pressing the 🌐 button).
+- Use a persistent data storage mechanism to allow the player to continue a gameplay session even after they have closed the game’s browser window.
+- Use a polyline to render the player’s movement history.
+- Allow the player to reset the game’s state (pressing the 🚮button), effectively returning all coins to their home caches and erasing their (potentially sensitive) location history.
+
+Your game SHOULD:
+- Use prompt() to ask the user if they are sure they want to erase their game state before setting.
+- Allow users to click a coin identifier to center the map on the location of the coin’s home cache (even if it is very from the current location).
+
+Your game MAY:
+- Use an alternate user interface layout is adapted to the use case where most users will control their movement using sensor data. (Direction buttons MUST still be available, but they can be hidden by default until revealed by an additional click.)
+*/
+
 // Configuration Settings ---------------------------------------------------------------
-const ORIGIN = leaflet.latLng(0, 0);
+const ORIGIN = leaflet.latLng(36.98949379578401, -122.06277128548504);
 // oakes: 36.98949379578401, -122.06277128548504
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_WIDTH = 1e-4;
@@ -32,9 +48,9 @@ const movementButtons = {
 const map = leaflet.map(document.getElementById("map")!, {
   center: ORIGIN,
   zoom: GAMEPLAY_ZOOM_LEVEL,
-  minZoom: GAMEPLAY_ZOOM_LEVEL,
+  minZoom: GAMEPLAY_ZOOM_LEVEL - 2,
   maxZoom: GAMEPLAY_ZOOM_LEVEL,
-  zoomControl: false,
+  zoomControl: true,
   scrollWheelZoom: false,
 });
 
@@ -59,6 +75,43 @@ const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS);
 let currentCells: Cell[] = board.getCellsNearPoint(ORIGIN);
 const currentRectangles = leaflet.layerGroup([]).addTo(map);
 const collectedCoins: Coin[] = [];
+
+const geolocationFlag = false;
+if ("geolocation" in navigator && geolocationFlag) {
+  console.log("located");
+  navigator.geolocation.watchPosition(
+    (position) => {
+      console.log(position.coords.latitude, position.coords.longitude);
+      const { latitude, longitude } = position.coords;
+      const newLatLng = leaflet.latLng(latitude, longitude);
+
+      playerMarker.setLatLng(newLatLng);
+      map.setView(newLatLng);
+
+      saveCacheState();
+      currentCells = board.getCellsNearPoint(newLatLng);
+      updateCells();
+    },
+    (error) => {
+      console.error("Error watching position:", error);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 5000,
+    },
+  );
+} else {
+  console.log("Location not found");
+}
+
+function saveCacheState() {
+  // Save current cache states
+  currentCells.forEach((cell) => {
+    const cache = board.getCacheForCell(cell);
+    board.saveCacheState(cell, cache);
+  });
+}
 
 // Clears the map and generates all current cells
 function updateCells() {
@@ -122,12 +175,7 @@ function movePlayer(deltaLat: number, deltaLng: number) {
   playerMarker.setLatLng(newLatLng);
   map.setView(newLatLng);
 
-  // Save current cache states
-  currentCells.forEach((cell) => {
-    const cache = board.getCacheForCell(cell);
-    board.saveCacheState(cell, cache);
-  });
-
+  saveCacheState();
   currentCells = board.getCellsNearPoint(newLatLng);
   updateCells();
 }
