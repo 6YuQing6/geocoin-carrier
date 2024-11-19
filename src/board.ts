@@ -1,3 +1,4 @@
+// board.ts
 // @deno-types="npm:@types/leaflet@^1.9.14"
 import leaflet from "leaflet";
 import luck from "./luck.ts";
@@ -21,18 +22,13 @@ export class Board {
   readonly radius: number;
 
   private readonly knownCells: Map<string, Cell>;
-  private caches: Map<string, string> = new Map();
-  coins: Coin[] = [];
-  points: string[];
 
   constructor(width: number, radius: number) {
     this.width = width;
     this.radius = radius;
     this.knownCells = new Map<string, Cell>();
-    this.points = [];
   }
 
-  // retrieves cell from map of cells
   private getCanonicalCell(cell: Cell): Cell {
     const { i, j } = cell;
     const key = `${i}.${j}`;
@@ -42,14 +38,12 @@ export class Board {
     return this.knownCells.get(key)!;
   }
 
-  // checks to see which cell you are in
   getCellForPoint(point: leaflet.LatLng): Cell {
     const i = Math.floor(point.lat / this.width);
     const j = Math.floor(point.lng / this.width);
     return this.getCanonicalCell({ i, j });
   }
 
-  // gets cell rectangle position
   getCellBounds(cell: Cell): leaflet.LatLngBounds {
     const { i, j } = cell;
     const southWest = leaflet.latLng(i * this.width, j * this.width);
@@ -60,19 +54,16 @@ export class Board {
     return leaflet.latLngBounds(southWest, northEast);
   }
 
-  // gets cells near a origin point
   getCellsNearPoint(point: leaflet.LatLng): Cell[] {
     const resultCells: Cell[] = [];
     const originCell = this.getCellForPoint(point);
     const { i, j } = originCell;
 
-    // gets range of surrounding i,j points in a circle based on visibility radius
     const range = Array.from(
       { length: 2 * this.radius + 1 },
       (_, k) => k - this.radius,
     );
 
-    // pushes each visible cell into resultCells array
     range.forEach((di) => {
       range.forEach((dj) => {
         if (luck([i + di, j + dj].toString()) < CACHE_SPAWN_PROBABILITY) {
@@ -84,6 +75,12 @@ export class Board {
 
     return resultCells;
   }
+}
+
+export class PlayerState {
+  private caches: Map<string, string> = new Map();
+  coins: Coin[] = [];
+  points: string[] = [];
 
   getCoinsInCell(cell: Cell): Coin[] {
     const numCoins = this.getCacheForCell(cell);
@@ -120,9 +117,7 @@ export class Board {
 
     // coins
     localStorage.setItem("coins", JSON.stringify(this.coins));
-  }
 
-  savePolyline() {
     // polyline
     localStorage.setItem("polyline", JSON.stringify(this.points));
   }
@@ -157,7 +152,6 @@ export class Board {
     this.points = [];
   }
 
-  // adds point to polyline
   addPoint(point: Cell) {
     const p = new Point(point);
     this.points.push(p.toMomento());
