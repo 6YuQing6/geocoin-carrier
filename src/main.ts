@@ -51,7 +51,7 @@ const cellGroup = leaflet.layerGroup([]).addTo(map);
 const polylineGroup = leaflet.layerGroup([]).addTo(map);
 
 const polyline = leaflet.polyline(
-  playerState.points ? playerState.toLatLng() : [ORIGIN],
+  playerState.polyline ? playerState.toLatLng() : [ORIGIN],
   {
     color: "red",
   },

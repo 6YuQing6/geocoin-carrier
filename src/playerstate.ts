@@ -5,7 +5,7 @@ import { Cell, Coin } from "./board.ts";
 export class PlayerState {
   private caches: Map<string, string> = new Map();
   coins: Coin[] = [];
-  points: string[] = [];
+  polyline: string[] = [];
 
   getCoinsInCell(cell: Cell): Coin[] {
     const numCoins = this.getCacheForCell(cell);
@@ -44,7 +44,7 @@ export class PlayerState {
     localStorage.setItem("coins", JSON.stringify(this.coins));
 
     // polyline
-    localStorage.setItem("polyline", JSON.stringify(this.points));
+    localStorage.setItem("polyline", JSON.stringify(this.polyline));
   }
 
   loadSession() {
@@ -64,7 +64,7 @@ export class PlayerState {
     // polyline
     const p = localStorage.getItem("polyline");
     if (p) {
-      this.points = JSON.parse(p);
+      this.polyline = JSON.parse(p);
     }
   }
 
@@ -74,17 +74,17 @@ export class PlayerState {
     localStorage.removeItem("polyline");
     this.caches.clear();
     this.coins = [];
-    this.points = [];
+    this.polyline = [];
   }
 
   addPoint(point: Cell) {
     const p = new Point(point);
-    this.points.push(p.toMomento());
-    return this.points;
+    this.polyline.push(p.toMomento());
+    return this.polyline;
   }
 
   toLatLng(): leaflet.LatLng[] {
-    const latLngPoints = this.points.map((point) => {
+    const latLngPoints = this.polyline.map((point) => {
       const p = new Point().fromMomento(point);
       return leaflet.latLng(p.i, p.j);
     });
