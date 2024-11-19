@@ -9,7 +9,8 @@ import "./style.css";
 // Fix missing marker images
 import "./leafletWorkaround.ts";
 
-import { Board, Cell, Coin, PlayerState } from "./board.ts";
+import { Board, Cell, Coin } from "./board.ts";
+import { PlayerState } from "./playerstate.ts";
 
 // Configuration Settings ---------------------------------------------------------------
 const ORIGIN = leaflet.latLng(36.98949379578401, -122.06277128548504);
