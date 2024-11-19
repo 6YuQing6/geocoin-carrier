@@ -16,8 +16,9 @@ import { PlayerState } from "./playerstate.ts";
 const ORIGIN = leaflet.latLng(36.98949379578401, -122.06277128548504);
 // oakes: 36.98949379578401, -122.06277128548504
 const GAMEPLAY_ZOOM_LEVEL = 19;
-const TILE_WIDTH = 1e-4;
-const VISIBILITY_RADIUS = 8;
+const board = new Board();
+const playerState = new PlayerState();
+playerState.loadSession(); // loads from local storage
 
 // Leaflet Elements ---------------------------------------------------------------
 const map = leaflet.map(document.getElementById("map")!, {
@@ -45,11 +46,6 @@ const playerMarker = leaflet
   .bindPopup("This is you!")
   .openPopup();
 
-// Leaflet Board Display ---------------------------------------------------------------
-const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS);
-const playerState = new PlayerState();
-playerState.loadSession(); // loads from local storage
-
 // leaflet layer groups
 const cellGroup = leaflet.layerGroup([]).addTo(map);
 const polylineGroup = leaflet.layerGroup([]).addTo(map);
@@ -62,6 +58,7 @@ const polyline = leaflet.polyline(
 );
 polylineGroup.addLayer(polyline);
 
+// Board Display ---------------------------------------------------------------
 // Clears the map and generates all current cells + gets coins in caches
 function updateCells(newLatLng: leaflet.LatLng) {
   cellGroup.clearLayers();
@@ -183,17 +180,20 @@ function movePlayer(deltaLat: number, deltaLng: number) {
 
 movementButtons.north.addEventListener(
   "click",
-  () => movePlayer(TILE_WIDTH, 0),
+  () => movePlayer(board.width, 0),
 );
 movementButtons.south.addEventListener(
   "click",
-  () => movePlayer(-TILE_WIDTH, 0),
+  () => movePlayer(-board.width, 0),
 );
 movementButtons.west.addEventListener(
   "click",
-  () => movePlayer(0, -TILE_WIDTH),
+  () => movePlayer(0, -board.width),
 );
-movementButtons.east.addEventListener("click", () => movePlayer(0, TILE_WIDTH));
+movementButtons.east.addEventListener(
+  "click",
+  () => movePlayer(0, board.width),
+);
 
 // HTML Display Defintions ---------------------------------------------------------------
 function displayCoins(coins: Coin[]): string {

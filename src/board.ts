@@ -13,19 +13,11 @@ export interface Coin {
   readonly serial: number;
 }
 
-const CACHE_SPAWN_PROBABILITY = 0.1;
-
 export class Board {
-  readonly width: number;
-  readonly radius: number;
-
-  private readonly knownCells: Map<string, Cell>;
-
-  constructor(width: number, radius: number) {
-    this.width = width;
-    this.radius = radius;
-    this.knownCells = new Map<string, Cell>();
-  }
+  readonly CACHE_SPAWN_PROBABILITY = 0.1;
+  readonly width: number = 1e-4;
+  readonly radius: number = 8;
+  private readonly knownCells: Map<string, Cell> = new Map<string, Cell>();
 
   private getCanonicalCell(cell: Cell): Cell {
     const { i, j } = cell;
@@ -64,7 +56,7 @@ export class Board {
 
     range.forEach((di) => {
       range.forEach((dj) => {
-        if (luck([i + di, j + dj].toString()) < CACHE_SPAWN_PROBABILITY) {
+        if (luck([i + di, j + dj].toString()) < this.CACHE_SPAWN_PROBABILITY) {
           const cell = this.getCanonicalCell({ i: i + di, j: j + dj });
           resultCells.push(cell);
         }
