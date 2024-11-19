@@ -45,7 +45,7 @@ const playerMarker = leaflet
   .bindPopup("This is you!")
   .openPopup();
 
-// Board Display ---------------------------------------------------------------
+// Leaflet Board Display ---------------------------------------------------------------
 const board = new Board(TILE_WIDTH, VISIBILITY_RADIUS);
 const playerState = new PlayerState();
 playerState.loadSession(); // loads from local storage
@@ -62,20 +62,18 @@ const polyline = leaflet.polyline(
 );
 polylineGroup.addLayer(polyline);
 
-// Clears the map and generates all current cells
-function updateCells() {
+// Clears the map and generates all current cells + gets coins in caches
+function updateCells(newLatLng: leaflet.LatLng) {
   cellGroup.clearLayers();
-  board.getCellsNearPoint(ORIGIN).forEach((cell) => {
+  board.getCellsNearPoint(newLatLng).forEach((cell) => {
     const rectangle = leaflet
       .rectangle(board.getCellBounds(cell))
       .bindPopup(() => createPopup(cell, playerState.getCoinsInCell(cell)));
     cellGroup.addLayer(rectangle);
-  });
-  board.getCellsNearPoint(ORIGIN).forEach((cell) => {
     playerState.getCacheForCell(cell);
   });
 }
-updateCells();
+updateCells(ORIGIN);
 
 // HTML Elements ---------------------------------------------------------------
 const statusPanel = document.querySelector<HTMLDivElement>("#status-panel")!;
@@ -87,10 +85,20 @@ function updateStatusPanel() {
       const target = event.target as HTMLElement;
       const i = parseFloat(target.dataset.i!);
       const j = parseFloat(target.dataset.j!);
-      const bounds = board.getCellBounds({ i, j });
-      const latLng = bounds.getCenter();
-      map.setView(latLng, GAMEPLAY_ZOOM_LEVEL);
-      console.log(i, j);
+      const cell = { i, j };
+      const rectangle = leaflet
+        .rectangle(board.getCellBounds({ i, j }))
+        .bindPopup(() => createPopup(cell, playerState.getCoinsInCell(cell)))
+        .addTo(cellGroup)
+        .openPopup();
+      map.setView(
+        board.getCellBounds({ i, j }).getCenter(),
+        GAMEPLAY_ZOOM_LEVEL,
+      );
+      rectangle.on("popupclose", () => {
+        map.setView(playerMarker.getLatLng(), GAMEPLAY_ZOOM_LEVEL);
+      });
+      cellGroup.addLayer(rectangle);
     });
   });
 }
@@ -109,7 +117,7 @@ resetButton.addEventListener("click", () => {
   if (confirmation) {
     playerState.clearSession();
     updateStatusPanel();
-    updateCells();
+    updateCells(playerMarker.getLatLng());
     polylineGroup.clearLayers();
   }
 });
@@ -128,6 +136,7 @@ function drawLine(nextPoint: leaflet.LatLng) {
   playerState.saveSession();
 }
 
+// Geolocation
 let watchId: number | null = null;
 function toggleGeolocation() {
   if (watchId === null && "geolocation" in navigator) {
@@ -140,7 +149,7 @@ function toggleGeolocation() {
         playerMarker.setLatLng(newLatLng);
         map.setView(newLatLng);
 
-        updateCells();
+        updateCells(playerMarker.getLatLng());
         drawLine(newLatLng);
       },
       (error) => {
@@ -169,7 +178,7 @@ function movePlayer(deltaLat: number, deltaLng: number) {
   map.setView(newLatLng);
 
   drawLine(newLatLng);
-  updateCells();
+  updateCells(newLatLng);
 }
 
 movementButtons.north.addEventListener(
@@ -186,7 +195,7 @@ movementButtons.west.addEventListener(
 );
 movementButtons.east.addEventListener("click", () => movePlayer(0, TILE_WIDTH));
 
-// Function Defintions ---------------------------------------------------------------
+// HTML Display Defintions ---------------------------------------------------------------
 function coinToString(coin: Coin): string {
   return `🪙 ${coin.i}:${coin.j}#${coin.serial}`;
 }
