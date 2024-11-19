@@ -54,6 +54,7 @@ h1 {
   align-items: center;
   text-align: center;
   padding: 1rem;
+  flex-wrap: wrap;
 }
 
 #coin-display {
