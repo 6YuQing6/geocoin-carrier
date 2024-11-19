@@ -196,18 +196,12 @@ movementButtons.west.addEventListener(
 movementButtons.east.addEventListener("click", () => movePlayer(0, TILE_WIDTH));
 
 // HTML Display Defintions ---------------------------------------------------------------
-function coinToString(coin: Coin): string {
-  return `🪙 ${coin.i}:${coin.j}#${coin.serial}`;
-}
-
 function displayCoins(coins: Coin[]): string {
   return `Coins:<br>${
     coins
       .map(
         (coin) =>
-          `<span class="coin" data-i="${coin.i}" data-j="${coin.j}">${
-            coinToString(coin)
-          }</span>`,
+          `<span class="coin" data-i="${coin.i}" data-j="${coin.j}" data-serial="${coin.serial}">🪙</span>`,
       )
       .join(" ")
   }`;
