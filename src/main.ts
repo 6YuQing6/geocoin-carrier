@@ -11,6 +11,8 @@ import "./leafletWorkaround.ts";
 
 import { Board, Cell, Coin } from "./board.ts";
 import { PlayerState } from "./playerstate.ts";
+import { createLayerGroup, initializeMap } from "./leafletUtils.ts";
+import { DOMManager } from "./domUtils.ts";
 
 // Configuration Settings ---------------------------------------------------------------
 const ORIGIN = leaflet.latLng(36.98949379578401, -122.06277128548504);
@@ -21,7 +23,6 @@ const playerState = new PlayerState();
 playerState.loadSession(); // loads from local storage
 
 // Leaflet Elements ---------------------------------------------------------------
-import { createLayerGroup, initializeMap } from "./leafletUtils.ts";
 
 const map = initializeMap(
   document.getElementById("map")!,
@@ -63,58 +64,32 @@ function updateCells(newLatLng: leaflet.LatLng) {
 updateCells(ORIGIN);
 
 // HTML Elements ---------------------------------------------------------------
-const statusPanel = document.querySelector<HTMLDivElement>("#status-panel")!;
-statusPanel.innerHTML = "No points yet...";
-function updateStatusPanel() {
-  statusPanel.innerHTML = displayCoins(playerState.coins);
-  statusPanel.querySelectorAll(".coin").forEach((coinElement) => {
-    coinElement.addEventListener("click", (event) => {
-      const target = event.target as HTMLElement;
-      const i = parseFloat(target.dataset.i!);
-      const j = parseFloat(target.dataset.j!);
-      const cell = { i, j };
-      const rectangle = leaflet
-        .rectangle(board.getCellBounds({ i, j }))
-        .bindPopup(() => createPopup(cell, playerState.getCoinsInCell(cell)))
-        .addTo(cellGroup)
-        .openPopup();
-      map.setView(
-        board.getCellBounds({ i, j }).getCenter(),
-        GAMEPLAY_ZOOM_LEVEL,
-      );
-      rectangle.on("popupclose", () => {
-        map.setView(playerMarker.getLatLng(), GAMEPLAY_ZOOM_LEVEL);
-      });
-      cellGroup.addLayer(rectangle);
-    });
-  });
-}
-updateStatusPanel();
+const domManager = new DOMManager();
 
-const geoLocationButton = document.querySelector<HTMLButtonElement>("#sensor")!;
-geoLocationButton.addEventListener("click", () => {
-  toggleGeolocation();
+domManager.updateCoins(playerState.coins);
+
+domManager.bindResetHandler(() => {
+  playerState.clearSession();
+  domManager.updateCoins(playerState.coins);
+  updateCells(playerMarker.getLatLng());
+  polylineGroup.clearLayers();
 });
 
-const resetButton = document.querySelector<HTMLButtonElement>("#reset")!;
-resetButton.addEventListener("click", () => {
-  const confirmation = confirm(
-    "Are you sure you want to erase your game state?",
+// Geolocation toggle
+domManager.bindGeoLocationHandler(() => toggleGeolocation());
+
+// Movement button logic
+domManager.bindMovementHandlers((deltaLat, deltaLng) => {
+  const currentLatLng = playerMarker.getLatLng();
+  const newLatLng = leaflet.latLng(
+    currentLatLng.lat + deltaLat,
+    currentLatLng.lng + deltaLng,
   );
-  if (confirmation) {
-    playerState.clearSession();
-    updateStatusPanel();
-    updateCells(playerMarker.getLatLng());
-    polylineGroup.clearLayers();
-  }
+  playerMarker.setLatLng(newLatLng);
+  map.setView(newLatLng);
+  drawLine(newLatLng);
+  updateCells(newLatLng);
 });
-
-const movementButtons = {
-  north: document.getElementById("north")!,
-  south: document.getElementById("south")!,
-  west: document.getElementById("west")!,
-  east: document.getElementById("east")!,
-};
 
 // Player Movement ---------------------------------------------------------------
 function drawLine(nextPoint: leaflet.LatLng) {
@@ -155,36 +130,6 @@ function toggleGeolocation() {
   }
 }
 
-function movePlayer(deltaLat: number, deltaLng: number) {
-  const currentLatLng = playerMarker.getLatLng();
-  const newLatLng = leaflet.latLng(
-    currentLatLng.lat + deltaLat,
-    currentLatLng.lng + deltaLng,
-  );
-  playerMarker.setLatLng(newLatLng);
-  map.setView(newLatLng);
-
-  drawLine(newLatLng);
-  updateCells(newLatLng);
-}
-
-movementButtons.north.addEventListener(
-  "click",
-  () => movePlayer(board.width, 0),
-);
-movementButtons.south.addEventListener(
-  "click",
-  () => movePlayer(-board.width, 0),
-);
-movementButtons.west.addEventListener(
-  "click",
-  () => movePlayer(0, -board.width),
-);
-movementButtons.east.addEventListener(
-  "click",
-  () => movePlayer(0, board.width),
-);
-
 // HTML Display Defintions ---------------------------------------------------------------
 function displayCoins(coins: Coin[]): string {
   return `Coins:<br>${
@@ -220,7 +165,7 @@ function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
       const collectedCoin = { ...cell, serial: cache.numCoins };
       playerState.coins.push(collectedCoin);
       coinDisplay.innerHTML = displayCoins(playerState.getCoinsInCell(cell));
-      updateStatusPanel();
+      domManager.updateCoins(playerState.coins);
       playerState.saveSession();
     }
   });
