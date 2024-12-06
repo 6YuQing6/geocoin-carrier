@@ -9,7 +9,7 @@ import "./style.css";
 // Fix missing marker images
 import "./leafletWorkaround.ts";
 
-import { Board, Cell, Coin } from "./board.ts";
+import { Board } from "./board.ts";
 import { PlayerState } from "./playerstate.ts";
 import { createLayerGroup, initializeMap } from "./leafletUtils.ts";
 import { DOMManager } from "./domUtils.ts";
@@ -56,7 +56,13 @@ function updateCells(newLatLng: leaflet.LatLng) {
   board.getCellsNearPoint(newLatLng).forEach((cell) => {
     const rectangle = leaflet
       .rectangle(board.getCellBounds(cell))
-      .bindPopup(() => createPopup(cell, playerState.getCoinsInCell(cell)));
+      .bindPopup(() =>
+        domManager.createPopup(
+          cell,
+          playerState.getCoinsInCell(cell),
+          playerState,
+        )
+      );
     cellGroup.addLayer(rectangle);
     playerState.getCacheForCell(cell);
   });
@@ -128,47 +134,4 @@ function toggleGeolocation() {
     navigator.geolocation.clearWatch(watchId);
     watchId = null;
   }
-}
-
-// HTML Display Defintions ---------------------------------------------------------------
-function displayCoins(coins: Coin[]): string {
-  return `Coins:<br>${
-    coins
-      .map(
-        (coin) =>
-          `<span class="coin" data-i="${coin.i}" data-j="${coin.j}" data-serial="${coin.serial}">🪙</span>`,
-      )
-      .join(" ")
-  }`;
-}
-
-function displayDescription(cell: Cell, coins: Coin[]): string {
-  return `
-    <div>There is a cache here at "${cell.i},${cell.j}".
-      <div id="coin-display"> ${displayCoins(coins)} </div>
-    </div>
-    <button id="poke">poke</button>`;
-}
-
-function createPopup(cell: Cell, coins: Coin[]): HTMLElement {
-  const popupDiv = document.createElement("div");
-  popupDiv.innerHTML = displayDescription(cell, coins);
-
-  const pokeButton = popupDiv.querySelector<HTMLButtonElement>("#poke")!;
-  const coinDisplay = popupDiv.querySelector<HTMLSpanElement>("#coin-display")!;
-
-  pokeButton.addEventListener("click", () => {
-    const cache = playerState.getCacheForCell(cell);
-    if (cache.numCoins > 0) {
-      cache.numCoins -= 1;
-      playerState.saveCacheState(cell, cache);
-      const collectedCoin = { ...cell, serial: cache.numCoins };
-      playerState.coins.push(collectedCoin);
-      coinDisplay.innerHTML = displayCoins(playerState.getCoinsInCell(cell));
-      domManager.updateCoins(playerState.coins);
-      playerState.saveSession();
-    }
-  });
-
-  return popupDiv;
 }

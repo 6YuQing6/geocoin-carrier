@@ -1,4 +1,5 @@
-import { Coin } from "./board.ts";
+import { Cell, Coin } from "./board.ts";
+import { PlayerState } from "./playerstate.ts";
 
 export class DOMManager {
   private statusPanel: HTMLElement;
@@ -74,6 +75,37 @@ export class DOMManager {
     );
   }
 
+  createPopup(
+    cell: Cell,
+    coins: Coin[],
+    playerState: PlayerState,
+  ): HTMLElement {
+    const popupDiv = document.createElement("div");
+    popupDiv.innerHTML = this.displayDescription(cell, coins);
+
+    const pokeButton = popupDiv.querySelector<HTMLButtonElement>("#poke")!;
+    const coinDisplay = popupDiv.querySelector<HTMLSpanElement>(
+      "#coin-display",
+    )!;
+
+    pokeButton.addEventListener("click", () => {
+      const cache = playerState.getCacheForCell(cell);
+      if (cache.numCoins > 0) {
+        cache.numCoins -= 1;
+        playerState.saveCacheState(cell, cache);
+        const collectedCoin = { ...cell, serial: cache.numCoins };
+        playerState.coins.push(collectedCoin);
+        coinDisplay.innerHTML = this.displayCoins(
+          playerState.getCoinsInCell(cell),
+        );
+        this.updateCoins(playerState.coins);
+        playerState.saveSession();
+      }
+    });
+
+    return popupDiv;
+  }
+
   // Private helper for displaying coins in the panel
   private displayCoins(coins: Coin[]): string {
     return `Coins:<br>${
@@ -84,5 +116,13 @@ export class DOMManager {
         )
         .join(" ")
     }`;
+  }
+
+  private displayDescription(cell: Cell, coins: Coin[]): string {
+    return `
+      <div>There is a cache here at "${cell.i},${cell.j}".
+        <div id="coin-display"> ${this.displayCoins(coins)} </div>
+      </div>
+      <button id="poke">poke</button>`;
   }
 }
