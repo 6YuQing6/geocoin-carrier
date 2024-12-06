@@ -1,4 +1,3 @@
-// leafletUtils.ts
 import leaflet from "leaflet";
 import { Cell } from "./board.ts";
 

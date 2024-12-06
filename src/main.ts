@@ -1,4 +1,3 @@
-// main.ts
 // @deno-types="npm:@types/leaflet@^1.9.14"
 import leaflet from "leaflet";
 
@@ -11,8 +10,8 @@ import "./leafletWorkaround.ts";
 
 import { Board } from "./board.ts";
 import { PlayerState } from "./playerstate.ts";
-import { createLayerGroup, initializeMap } from "./leafletUtils.ts";
-import { DOMManager } from "./domUtils.ts";
+import { createLayerGroup, initializeMap } from "./leafletConfig.ts";
+import { DOMManager } from "./domManager.ts";
 
 // Configuration Settings ---------------------------------------------------------------
 const ORIGIN = leaflet.latLng(36.98949379578401, -122.06277128548504);
@@ -23,7 +22,6 @@ const playerState = new PlayerState();
 playerState.loadSession(); // loads from local storage
 
 // Leaflet Elements ---------------------------------------------------------------
-
 const map = initializeMap(
   document.getElementById("map")!,
   ORIGIN,
