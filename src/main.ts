@@ -21,23 +21,13 @@ const playerState = new PlayerState();
 playerState.loadSession(); // loads from local storage
 
 // Leaflet Elements ---------------------------------------------------------------
-const map = leaflet.map(document.getElementById("map")!, {
-  center: ORIGIN,
-  zoom: GAMEPLAY_ZOOM_LEVEL,
-  minZoom: GAMEPLAY_ZOOM_LEVEL - 2,
-  maxZoom: GAMEPLAY_ZOOM_LEVEL,
-  zoomControl: true,
-  scrollWheelZoom: false,
-});
+import { createLayerGroup, initializeMap } from "./leafletUtils.ts";
 
-// Background
-leaflet
-  .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution:
-      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  })
-  .addTo(map);
+const map = initializeMap(
+  document.getElementById("map")!,
+  ORIGIN,
+  GAMEPLAY_ZOOM_LEVEL,
+);
 
 // Player
 const playerMarker = leaflet
@@ -47,8 +37,8 @@ const playerMarker = leaflet
   .openPopup();
 
 // leaflet layer groups
-const cellGroup = leaflet.layerGroup([]).addTo(map);
-const polylineGroup = leaflet.layerGroup([]).addTo(map);
+const cellGroup = createLayerGroup(map);
+const polylineGroup = createLayerGroup(map);
 
 const polyline = leaflet.polyline(
   playerState.polyline ? playerState.toLatLng() : [ORIGIN],
